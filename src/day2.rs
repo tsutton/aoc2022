@@ -23,12 +23,12 @@ enum Move {
 
 impl Move {
     fn defeats(&self, other: &Move) -> bool {
-        match (self, other) {
-            (Self::Rock, Self::Scissors) => true,
-            (Self::Scissors, Self::Paper) => true,
-            (Self::Paper, Self::Rock) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::Rock, Self::Scissors)
+                | (Self::Scissors, Self::Paper)
+                | (Self::Paper, Self::Rock)
+        )
     }
 
     fn move_which_ties(&self) -> Move {
