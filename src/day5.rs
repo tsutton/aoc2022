@@ -1,10 +1,4 @@
-use std::{
-    collections::{HashSet, VecDeque},
-    convert::TryInto,
-    fs::File,
-    io::Read,
-    ops::Range,
-};
+use std::{collections::VecDeque, fs::File, io::Read};
 
 fn read_input() -> String {
     let mut r = String::new();

@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs::File, io::Read, ops::Range};
+use std::{fs::File, io::Read, ops::Range};
 
 fn read_input() -> String {
     let mut r = String::new();
