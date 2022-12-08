@@ -46,30 +46,6 @@ impl FileSystem {
         }
     }
 
-    // fn lookup_directory<P>(&self, path: &[P]) -> Option<&Directory>
-    // where
-    //     String: Borrow<P>,
-    //     P: Hash + Eq,
-    // {
-    //     let mut dir = Some(&self.root);
-    //     for p in path {
-    //         dir = dir.and_then(|f| f.subdirectories.get(p))
-    //     }
-    //     dir
-    // }
-
-    // fn lookup_directory_mut<P>(&mut self, path: &[P]) -> Option<&mut Directory>
-    // where
-    //     String: Borrow<P>,
-    //     P: Hash + Eq,
-    // {
-    //     let mut dir = Some(&mut self.root);
-    //     for p in path {
-    //         dir = dir.and_then(|f| f.subdirectories.get_mut(p))
-    //     }
-    //     dir
-    // }
-
     fn get_or_create_directory(&mut self, path: &[String]) -> &mut Directory {
         let mut dir = &mut self.root;
         for p in path {
@@ -104,12 +80,9 @@ impl Default for Directory {
     }
 }
 
-pub fn part1() {
-    // let input = EXAMPLE;
-    let input = read_input();
-
+fn parse_filesystem(s: &str) -> FileSystem {
     let mut current_path = vec![];
-    let mut lines = input.lines().peekable();
+    let mut lines = s.lines().peekable();
 
     let mut fs = FileSystem::new();
 
@@ -140,14 +113,34 @@ pub fn part1() {
             }
         }
     }
+    fs
+}
+
+pub fn part1() {
+    // let input = EXAMPLE;
+    let input = read_input();
+
+    let fs = parse_filesystem(&input);
 
     let mut counter = 0;
-    let mut cb = |f| counter += f;
-    let t = part1_walk(&fs.root, &mut cb, "/");
+    let mut cb = |f| {
+        if f < 100000 {
+            counter += f
+        }
+    };
+    part1_walk(&fs.root, &mut cb, "/");
     println!("{counter}");
 }
 
-fn part1_walk<F>(dir: &Directory, callback: &mut F, dir_name: &str) -> u64
+// We're going to do this recursively using a sorta visitor pattern to walk the directory tree
+// for a given directory, we determine its size recursively.
+// We *could* do something like: produce a tree of sizes, similar to our tree of directories.
+// then walk that tree of sizes to produce the result.
+// However, we can avoid defining that tree and walking it by using a callback: whenever we find a directory
+// that has the right size, use the callback to take some action right away
+// in part 1, we want the sum of all sizes of small directories. So the action is to tally up our directory
+// into the total.
+fn part1_walk<F>(dir: &Directory, callback: &mut F, _dir_name: &str) -> u64
 where
     F: FnMut(u64),
 {
@@ -159,9 +152,30 @@ where
 
     let total: u64 = subdir_subtotal + dir.files.iter().map(|(_, s)| s).sum::<u64>();
 
-    if total <= 100000 {
-        // println!("calling CB on {}", dir_name);
-        callback(total);
-    }
+    callback(total);
     total
+}
+
+pub fn part2() {
+    // let input = EXAMPLE;
+    let input = read_input();
+
+    let fs = parse_filesystem(&input);
+
+    let current_size = fs.root.size();
+    let min_size_to_update = 30000000;
+    let total_size = 70000000;
+    let current_unused_space = total_size - current_size;
+    let min_space_to_delete = min_size_to_update - current_unused_space;
+
+    println!("looking for dirs whose size is at least {min_space_to_delete}");
+
+    let mut min_found = total_size; // aka infinity: just some number bigger
+    let mut cb = |f| {
+        if f >= min_space_to_delete && f < min_found {
+            min_found = f
+        }
+    };
+    part1_walk(&fs.root, &mut cb, "/");
+    println!("{min_found}");
 }
