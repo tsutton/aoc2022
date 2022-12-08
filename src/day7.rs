@@ -128,7 +128,7 @@ pub fn part1() {
             counter += f
         }
     };
-    part1_walk(&fs.root, &mut cb, "/");
+    walk_directory_tree(&fs.root, &mut cb, "/");
     println!("{counter}");
 }
 
@@ -136,18 +136,16 @@ pub fn part1() {
 // for a given directory, we determine its size recursively.
 // We *could* do something like: produce a tree of sizes, similar to our tree of directories.
 // then walk that tree of sizes to produce the result.
-// However, we can avoid defining that tree and walking it by using a callback: whenever we find a directory
-// that has the right size, use the callback to take some action right away
-// in part 1, we want the sum of all sizes of small directories. So the action is to tally up our directory
-// into the total.
-fn part1_walk<F>(dir: &Directory, callback: &mut F, _dir_name: &str) -> u64
+// However, we can avoid defining that tree and walking it by using a callback: after every directory,
+// take some action right away utilizing the callback.
+fn walk_directory_tree<F>(dir: &Directory, callback: &mut F, _dir_name: &str) -> u64
 where
     F: FnMut(u64),
 {
     let subdir_subtotal: u64 = dir
         .subdirectories
         .iter()
-        .map(|(k, d)| part1_walk(d, callback, k))
+        .map(|(k, d)| walk_directory_tree(d, callback, k))
         .sum();
 
     let total: u64 = subdir_subtotal + dir.files.iter().map(|(_, s)| s).sum::<u64>();
@@ -176,6 +174,6 @@ pub fn part2() {
             min_found = f
         }
     };
-    part1_walk(&fs.root, &mut cb, "/");
+    walk_directory_tree(&fs.root, &mut cb, "/");
     println!("{min_found}");
 }
