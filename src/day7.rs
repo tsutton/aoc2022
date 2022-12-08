@@ -81,36 +81,40 @@ impl Default for Directory {
 }
 
 fn parse_filesystem(s: &str) -> FileSystem {
+    // track the current directory using a vec of strings
+    // then we can push for relative `cd`, pop for `cd ..`, and reset for `cd /`
     let mut current_path = vec![];
     let mut lines = s.lines().peekable();
 
     let mut fs = FileSystem::new();
 
     while let Some(line) = lines.next() {
-        if line.as_bytes()[0] == b'$' {
-            if line.as_bytes()[2..4] == [b'c', b'd'] {
-                let dir = &line.as_bytes()[5..];
-                if dir == [b'.', b'.'] {
-                    current_path.pop();
-                } else {
-                    current_path.push(String::from_utf8(dir.to_vec()).unwrap());
-                }
-            } else if line.as_bytes()[2..4] == [b'l', b's'] {
-                let mut files = vec![];
-                while lines
-                    .peek()
-                    .map(|line| line.as_bytes()[0] != b'$')
-                    .unwrap_or(false)
-                {
-                    let file_line = lines.next().unwrap();
-                    let (word1, word2) = file_line.split_once(' ').unwrap();
-                    if word1 != "dir" {
-                        let size: u64 = word1.parse().unwrap();
-                        files.push((word2.to_string(), size))
-                    }
-                }
-                fs.get_or_create_directory(&current_path).files = files;
+        if line.as_bytes()[0] != b'$' {
+            panic!("Tried to read command but didn't begin with $: {line}");
+        }
+
+        if line.as_bytes()[2..4] == [b'c', b'd'] {
+            let dir = &line.as_bytes()[5..];
+            if dir == [b'.', b'.'] {
+                current_path.pop();
+            } else {
+                current_path.push(String::from_utf8(dir.to_vec()).unwrap());
             }
+        } else if line.as_bytes()[2..4] == [b'l', b's'] {
+            let mut files = vec![];
+            while lines
+                .peek()
+                .map(|line| line.as_bytes()[0] != b'$')
+                .unwrap_or(false)
+            {
+                let file_line = lines.next().unwrap();
+                let (word1, word2) = file_line.split_once(' ').unwrap();
+                if word1 != "dir" {
+                    let size: u64 = word1.parse().unwrap();
+                    files.push((word2.to_string(), size))
+                }
+            }
+            fs.get_or_create_directory(&current_path).files = files;
         }
     }
     fs
@@ -160,7 +164,9 @@ pub fn part2() {
 
     let fs = parse_filesystem(&input);
 
+    // Not sure if we can avoid walking the directory tree twice. So just call size() at the start
     let current_size = fs.root.size();
+
     let min_size_to_update = 30000000;
     let total_size = 70000000;
     let current_unused_space = total_size - current_size;
@@ -168,7 +174,7 @@ pub fn part2() {
 
     println!("looking for dirs whose size is at least {min_space_to_delete}");
 
-    let mut min_found = total_size; // aka infinity: just some number bigger
+    let mut min_found = total_size; // aka infinity: just some number bigger than any number we'll actuall get
     let mut cb = |f| {
         if f >= min_space_to_delete && f < min_found {
             min_found = f
