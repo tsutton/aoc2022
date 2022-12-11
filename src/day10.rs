@@ -68,7 +68,40 @@ pub fn part1() {
     println!("{}", total_signal_strength)
 }
 
-pub fn part2() {}
+pub fn part2() {
+    // let input = EXAMPLE;
+    let input = read_input();
+    let mut cpu = Cpu { x: 1 };
+    let mut cycle = 1;
+
+    // Strategy: Still iteratate through instructions as in part 1. But after executing each instruction,
+    // do all of the draws that occured while that instruction was executing.
+    // We'll just use a simple vec for the screen, where 0..40 are top row, 41..80 second ,etc
+    let mut screen = vec![b'.'; 240];
+
+    for line in input.lines() {
+        let instruction = Instruction::from_str(line);
+        let old_x = cpu.x;
+        let new_cycle = cpu.execute_instruction(&instruction) + cycle;
+
+        // draw from cycle to new_cycle
+        for c in cycle..new_cycle {
+            let screen_index = usize::try_from(c - 1).unwrap(); // screen is 0-indexed, cycle starts at 1 though.
+            let draw_column = (c - 1) % 40; // on cycle 1, we draw pixel 0
+            if draw_column.abs_diff(old_x) <= 1 {
+                screen[screen_index] = b'#';
+            }
+        }
+        cycle = new_cycle;
+    }
+    for i in 0..6 {
+        for j in 0..40 {
+            let c: char = screen[40 * i + j].into();
+            print!("{c}");
+        }
+        println!();
+    }
+}
 
 #[allow(unused)]
 const EXAMPLE: &str = r"addx 15
