@@ -1,6 +1,6 @@
-use aoc2022::day11;
+use aoc2022::day12;
 
 fn main() {
-    day11::part1();
-    day11::part2();
+    day12::part1();
+    day12::part2();
 }
