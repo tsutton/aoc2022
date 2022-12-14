@@ -1,4 +1,4 @@
-use std::{fs::File, io::Read};
+use std::{fmt::Display, fs::File, io::Read};
 
 use nom::{
     bytes::complete::tag, character::complete::line_ending, multi::separated_list0, IResult,
@@ -69,6 +69,31 @@ impl Ord for PacketItem {
     }
 }
 
+impl Display for PacketItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PacketItem::List(l) => {
+                write!(f, "[")?;
+                for item in l {
+                    write!(f, "{},", item)?;
+                }
+                write!(f, "]")
+            }
+            PacketItem::Value(u) => write!(f, "{}", u),
+        }
+    }
+}
+
+impl Display for Packet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        for item in self.items.iter() {
+            write!(f, "{},", item)?;
+        }
+        write!(f, "]")
+    }
+}
+
 #[allow(unused)]
 const EXAMPLE: &str = r"[1,1,3,1,1]
 [1,1,5,1,1]
@@ -127,4 +152,38 @@ pub fn part1() {
     println!("{acc}");
 }
 
-pub fn part2() {}
+pub fn part2() {
+    // let mut input = EXAMPLE;
+    let base_input = read_input();
+    let mut input: &str = &base_input;
+
+    let mut packets = Vec::new();
+    loop {
+        let (remaining, p1) = parse_packet(input).unwrap();
+        let (remaining, p2) = parse_packet(remaining).unwrap();
+        packets.push(p1);
+        packets.push(p2);
+        input = remaining;
+        if !input.is_empty() {
+            input = &input[1..]; // skip empty line
+        } else {
+            break;
+        }
+    }
+    let divider_1 = Packet {
+        items: vec![PacketItem::List(vec![PacketItem::Value(2)])],
+    };
+    let divider_2 = Packet {
+        items: vec![PacketItem::List(vec![PacketItem::Value(6)])],
+    };
+    packets.push(divider_1.clone());
+    packets.push(divider_2.clone());
+    packets.sort();
+
+    let i1 = packets.binary_search(&divider_1).unwrap();
+    let i2 = packets.binary_search(&divider_2).unwrap();
+    // for item in packets.iter() {
+    //     println!("{},", item);
+    // }
+    println!("{i1}, {i2}, {}", (i1 + 1) * (i2 + 1));
+}
