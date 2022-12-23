@@ -34,7 +34,6 @@ impl Column {
 }
 
 mod part1 {
-
     use super::*;
 
     struct Cave {
@@ -164,4 +163,137 @@ mod part1 {
 
 pub use part1::part1;
 
-pub fn part2() {}
+mod part2 {
+    use super::*;
+
+    struct Cave {
+        data: HashMap<usize, Column>,
+        floor_row: usize,
+    }
+
+    fn parse_coordinate(input: &str) -> (usize, usize) {
+        let node_coords: Vec<usize> = input.split(',').map(|s| s.parse().unwrap()).collect();
+        (node_coords[0], node_coords[1])
+    }
+
+    impl Cave {
+        fn new() -> Self {
+            Self {
+                data: HashMap::new(),
+                floor_row: 0,
+            }
+        }
+
+        fn add_path(&mut self, path: &str) {
+            let node_strs: Vec<&str> = path.split(" -> ").collect();
+            assert!(node_strs.len() > 1);
+            for (i, window) in node_strs.windows(2).enumerate() {
+                let (start_x, start_y) = parse_coordinate(window[0]);
+                let (end_x, end_y) = parse_coordinate(window[1]);
+                if i == 0 {
+                    self.add_square(start_x, start_y);
+                }
+                if start_x == end_x {
+                    let (start_y, end_y) = (start_y.min(end_y), start_y.max(end_y));
+                    for y in start_y..=end_y {
+                        self.add_square(start_x, y);
+                    }
+                } else if start_y == end_y {
+                    let (start_x, end_x) = (start_x.min(end_x), start_x.max(end_x));
+                    for x in start_x..=end_x {
+                        self.add_square(x, start_y);
+                    }
+                }
+            }
+        }
+
+        fn add_square(&mut self, start_x: usize, start_y: usize) {
+            self.data
+                .entry(start_x)
+                .or_default()
+                .insert(start_y.try_into().unwrap());
+            if start_y + 2 >= self.floor_row {
+                self.floor_row = start_y + 2;
+            }
+        }
+
+        fn drop_sand(&mut self) -> bool {
+            self.drop_sand_from(500, 0)
+        }
+
+        // returns true if sand was able to be dropped i.e. (col, row) is not occupied, false otherwise
+        fn drop_sand_from(&mut self, column_idx: usize, row_idx: i32) -> bool {
+            let next_place_in_current_column = self
+                .data
+                .entry(column_idx)
+                .or_default()
+                .least_occupied_space_after(row_idx);
+            match next_place_in_current_column {
+                None => {
+                    self.data
+                        .entry(column_idx)
+                        .or_default()
+                        .insert((self.floor_row - 1).try_into().unwrap());
+                    true
+                }
+                Some(row) if row > row_idx => {
+                    // try to drop sand from left
+                    let drop_left_attempt = self.drop_sand_from(column_idx - 1, row);
+                    if drop_left_attempt {
+                        return true;
+                    }
+                    let drop_right_attempt = self.drop_sand_from(column_idx + 1, row);
+                    if drop_right_attempt {
+                        return true;
+                    }
+                    self.data.entry(column_idx).or_default().insert(row - 1);
+                    true
+                }
+                _ => false,
+            }
+        }
+    }
+
+    impl Display for Cave {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let mut columns: Vec<_> = self.data.keys().copied().collect();
+            columns.sort();
+            let max_row = self
+                .data
+                .values()
+                .map(|col| col.occupied_spaces.last().copied().unwrap_or_default())
+                .max()
+                .unwrap();
+            for row in 0..=max_row {
+                for column in columns[0]..=columns.last().copied().unwrap() {
+                    if !self.data.contains_key(&column) {
+                        write!(f, ".")?;
+                    } else if self.data[&column].occupied_spaces.contains(&row) {
+                        write!(f, "#")?;
+                    } else {
+                        write!(f, ".")?;
+                    }
+                }
+                writeln!(f,)?;
+            }
+            Ok(())
+        }
+    }
+
+    pub fn part2() {
+        // let input = EXAMPLE;
+        let input = read_input();
+        let mut cave = Cave::new();
+        for line in input.lines() {
+            cave.add_path(line);
+        }
+        // println!("{cave}");
+        let mut count = 0;
+        while cave.drop_sand() {
+            count += 1;
+        }
+        println!("{count}");
+    }
+}
+
+pub use part2::part2;
