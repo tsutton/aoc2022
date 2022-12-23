@@ -1,3 +1,5 @@
+#![allow(clippy::bool_to_int_with_if)]
+
 /// I decided not to implement a parser for the input format and instead hardcode the example monkeys
 /// and the input monkeys, since it's easier.
 /// Part 1 is at the top level, but part 2 needed some re-implementation of the entire monkey idea so

@@ -150,7 +150,7 @@ pub fn part2() {
         let stack_to: usize = parts[5].parse().unwrap();
         for i in 0..crates_to_move {
             let from = &stacks[stack_from - 1];
-            let idx = from.len() + (i as usize) - crates_to_move;
+            let idx = from.len() + i - crates_to_move;
             let c = from[idx];
             let to = &mut stacks[stack_to - 1];
             to.push_back(c);
